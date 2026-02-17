@@ -1,7 +1,10 @@
+import asyncio
+
 from core.bootstrap.service import BaseService
 from core.events import Event, create_event
 from core.events.types import EventTypes
 
+from processor.enrichers import extract_keywords, categorize, score_article
 
 class ProcessorService(BaseService):
 
@@ -20,12 +23,34 @@ class ProcessorService(BaseService):
             },
         )
 
+        #Extract content and process
+        content = event.payload.get("content", "")
+
+        keywords = extract_keywords(content)
+        category = categorize(content)
+        score = score_article(content)
+
+        enriched_payload = {
+            **event.payload,
+            "keywords": keywords,
+            "category": category,
+            "importance_score": score,
+        }
+
         enriched_event = create_event(
             event_type=EventTypes.NEWS_ARTICLE_ENRICHED,
             source=self.name,
             payload={"example": "data"},
             correlation_id=event.correlation_id,
             causation_id=event.event_id,
+        )
+
+        self.logger.info(
+            "Article enriched",
+            extra={
+                "event_id": str(enriched_event.event_id),
+                "correlation_id": str(enriched_event.correlation_id),
+            },
         )
 
         await self.event_bus.publish(enriched_event)
