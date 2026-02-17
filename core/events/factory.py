@@ -1,4 +1,5 @@
 from datetime import datetime
+from .schema import Event
 
 
 def create_event(

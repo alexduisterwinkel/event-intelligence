@@ -4,7 +4,7 @@ from core.bootstrap.service import BaseService
 from core.events import Event, create_event
 from core.events.types import EventTypes
 
-from processor.enrichers import extract_keywords, categorize, score_article
+from .enrichers import extract_keywords, categorize, score_article
 
 class ProcessorService(BaseService):
 

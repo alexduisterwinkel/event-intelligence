@@ -13,6 +13,7 @@ class IntelligenceService(BaseService):
     def __init__(self, name, event_bus):
         super().__init__(name, event_bus)
         self.detector = TrendDetector(window_seconds=60, threshold=3)
+        self.signals = []   # store emitted signals
 
     async def register_handlers(self):
         await self.event_bus.subscribe(
@@ -41,6 +42,8 @@ class IntelligenceService(BaseService):
                 correlation_id=event.correlation_id,
                 causation_id=event.event_id,
             )
+
+            self.signals.append(signal_payload)
 
             self.logger.info(
                 "Trend detected",

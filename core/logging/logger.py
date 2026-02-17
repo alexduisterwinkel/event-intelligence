@@ -19,7 +19,7 @@ def setup_logger(service_name: str):
 
     return logger
 
-//usage:
+#usage:
 # logger.info(
 #     "Event processed",
 #     extra={
