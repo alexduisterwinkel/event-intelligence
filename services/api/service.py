@@ -17,6 +17,22 @@ class APIService(BaseService):
 
     def _register_routes(self):
 
+        @self.app.get("/")
+        async def home():
+            return HTMLResponse("""
+            <html>
+            <body>
+            <script>
+            const ws = new WebSocket("ws://localhost:8001/ws/signals");
+            ws.onmessage = (event) => {
+                console.log("Signal:", JSON.parse(event.data));
+            };
+            </script>
+            </body>
+            </html>
+            """)
+
+
         @self.app.get("/signals")
         async def get_signals():
             return {

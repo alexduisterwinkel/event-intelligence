@@ -1,4 +1,5 @@
 import asyncio
+from fastapi.responses import HTMLResponse
 
 from core.messaging.in_memory_bus import InMemoryEventBus
 from services.ingestion.service import IngestionService
@@ -6,6 +7,7 @@ from services.ingestion.sources.news_api import MockNewsSource
 from services.processor.service import ProcessorService
 from services.intelligence.service import IntelligenceService
 from services.api.service import APIService
+from services.realtime.service import RealtimeService
 
 
 async def main():
@@ -35,11 +37,18 @@ async def main():
         intelligence_service=intelligence,
     )
 
+    realtime = RealtimeService(
+        name="realtime",
+        event_bus=event_bus,
+    )
+
+
     await asyncio.gather(
         ingestion.start(),
         processor.start(),
         intelligence.start(),
         api.start(),
+        realtime.start(),
     )
 
 
