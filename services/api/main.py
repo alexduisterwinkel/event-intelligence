@@ -1,7 +1,7 @@
 import asyncio
 from fastapi.responses import HTMLResponse
 
-from core.messaging.in_memory_bus import InMemoryEventBus
+from core.messaging.redis_bus import RedisEventBus
 from services.ingestion.service import IngestionService
 from services.ingestion.sources.news_api import MockNewsSource
 from services.processor.service import ProcessorService
@@ -12,7 +12,7 @@ from services.realtime.service import RealtimeService
 
 async def main():
 
-    event_bus = InMemoryEventBus()
+    event_bus = RedisEventBus()
 
     ingestion = IngestionService(
         name="ingestion",

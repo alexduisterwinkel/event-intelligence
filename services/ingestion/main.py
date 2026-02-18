@@ -1,12 +1,12 @@
 import asyncio
 
-from core.messaging.in_memory_bus import InMemoryEventBus
+from core.messaging.redis_bus import RedisEventBus
 from services.ingestion.service import IngestionService
 from services.ingestion.sources.news_api import MockNewsSource
 
 
 async def main():
-    event_bus = InMemoryEventBus()
+    event_bus = RedisEventBus()
 
     source = MockNewsSource()
 

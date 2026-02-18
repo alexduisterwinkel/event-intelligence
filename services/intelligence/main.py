@@ -1,11 +1,11 @@
 import asyncio
 
-from core.messaging.in_memory_bus import InMemoryEventBus
+from core.messaging.redis_bus import RedisEventBus
 from services.intelligence.service import IntelligenceService
 
 
 async def main():
-    event_bus = InMemoryEventBus()
+    event_bus = RedisEventBus()
 
     service = IntelligenceService(
         name="intelligence",
