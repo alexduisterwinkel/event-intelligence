@@ -3,18 +3,32 @@ import asyncio
 from core.bootstrap.service import BaseService
 from core.events import Event, create_event
 from core.events.types import EventTypes
+from core.messaging.streams import RAW_EVENTS, PROCESSED_EVENTS
 
 from .enrichers import extract_keywords, categorize, score_article
 
 class ProcessorService(BaseService):
 
     async def register_handlers(self) -> None:
-        await self.event_bus.subscribe(
-            EventTypes.NEWS_ARTICLE_DETECTED,
-            self.handle_article_detected,
+        await self.event_bus.ensure_group(
+            RAW_EVENTS,
+            "processor",
         )
 
-    async def handle_article_detected(self, event: Event) -> None:
+        asyncio.create_task(
+            self.event_bus.consume(
+                stream=RAW_EVENTS,
+                group="processor",
+                consumer="processor-1",
+                handler=self.handle_event,
+            )
+        )
+
+    async def handle_event(self, event: Event) -> None:
+
+        if event.event_type != EventTypes.NEWS_ARTICLE_DETECTED:
+            return
+
         self.logger.info(
             "Processing article",
             extra={
@@ -40,7 +54,7 @@ class ProcessorService(BaseService):
         enriched_event = create_event(
             event_type=EventTypes.NEWS_ARTICLE_ENRICHED,
             source=self.name,
-            payload={"example": "data"},
+            payload=enriched_payload,
             correlation_id=event.correlation_id,
             causation_id=event.event_id,
         )
@@ -53,7 +67,7 @@ class ProcessorService(BaseService):
             },
         )
 
-        await self.event_bus.publish(enriched_event)
+        await self.event_bus.publish(PROCESSED_EVENTS,enriched_event,)
 
     async def run(self) -> None:
         while True:

@@ -15,7 +15,7 @@ class BaseService(ABC):
     @abstractmethod
     async def register_handlers(self) -> None:
         """
-        Register event handlers with the event bus.
+        Register stream consumers or handlers.
         """
         pass
 
@@ -23,7 +23,6 @@ class BaseService(ABC):
         self.logger.info("Service starting")
 
         await self.register_handlers()
-        await self.event_bus.start()
 
         self.logger.info("Service started")
 
@@ -32,7 +31,7 @@ class BaseService(ABC):
     @abstractmethod
     async def run(self) -> None:
         """
-        Long-running execution loop if needed.
+        Long-running execution loop.
         """
         pass
 

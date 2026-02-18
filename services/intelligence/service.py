@@ -4,6 +4,7 @@ from datetime import datetime
 from core.bootstrap.service import BaseService
 from core.events import Event, create_event
 from core.events.types import EventTypes
+from core.messaging.streams import PROCESSED_EVENTS, SIGNALS
 
 from .detectors.trend_detector import TrendDetector
 
@@ -16,12 +17,24 @@ class IntelligenceService(BaseService):
         self.signals = []   # store emitted signals
 
     async def register_handlers(self):
-        await self.event_bus.subscribe(
-            EventTypes.NEWS_ARTICLE_ENRICHED,
-            self.handle_enriched_article,
+        await self.event_bus.ensure_group(
+            PROCESSED_EVENTS,
+            "intelligence",
         )
 
-    async def handle_enriched_article(self, event: Event):
+        asyncio.create_task(
+            self.event_bus.consume(
+                stream=PROCESSED_EVENTS,
+                group="intelligence",
+                consumer="intelligence-1",
+                handler=self.handle_event,
+            )
+        )
+
+    async def handle_event(self, event: Event):
+
+        if event.event_type != EventTypes.NEWS_ARTICLE_ENRICHED:
+            return
 
         category = event.payload.get("category", "general")
         timestamp = event.timestamp
@@ -53,7 +66,7 @@ class IntelligenceService(BaseService):
                 },
             )
 
-            await self.event_bus.publish(signal_event)
+            await self.event_bus.publish(SIGNALS,signal_event,)
 
     async def run(self):
         while True:

@@ -4,6 +4,7 @@ from datetime import datetime
 from core.bootstrap.service import BaseService
 from core.events import create_event
 from core.events.types import EventTypes
+from core.messaging.streams import RAW_EVENTS
 
 
 class IngestionService(BaseService):
@@ -37,6 +38,6 @@ class IngestionService(BaseService):
                         },
                     )
 
-                    await self.event_bus.publish(event)
+                    await self.event_bus.publish(RAW_EVENTS,event,)
 
             await asyncio.sleep(self.interval)

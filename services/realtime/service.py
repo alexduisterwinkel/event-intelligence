@@ -4,6 +4,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from core.bootstrap.service import BaseService
 from core.events import Event
 from core.events.types import EventTypes
+from core.messaging.streams import SIGNALS
 
 from .connection_manager import ConnectionManager
 
@@ -24,6 +25,21 @@ class RealtimeService(BaseService):
             self.handle_signal_detected,
         )
 
+    async def register_handlers(self) -> None:
+            await self.event_bus.ensure_group(
+                SIGNALS,
+                "realtime",
+            )
+
+            asyncio.create_task(
+                self.event_bus.consume(
+                    stream=SIGNALS,
+                    group="realtime",
+                    consumer="realtime-1",
+                    handler=self.handle_event,
+                )
+            )
+
     def _register_routes(self):
 
         @self.app.websocket("/ws/signals")
@@ -36,7 +52,10 @@ class RealtimeService(BaseService):
             except WebSocketDisconnect:
                 self.manager.disconnect(websocket)
 
-    async def handle_signal_detected(self, event: Event):
+    async def handle_event(self, event: Event):
+
+        if event.event_type != EventTypes.NEWS_ARTICLE_ENRICHED:
+            return
         await self.manager.broadcast(event.payload)
 
     async def run(self):
