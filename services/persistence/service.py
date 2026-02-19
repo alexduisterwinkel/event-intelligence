@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from core.bootstrap.service import BaseService
 from core.events import Event
@@ -36,7 +37,7 @@ class SignalPersistenceService(BaseService):
         payload = event.payload
 
         async with AsyncSessionLocal() as session:
-            stmt = insert(Signal).values(
+            stmt = pg_insert(Signal).values(
                 id=event.event_id,
                 category=payload.get("category"),
                 message=payload.get("message"),
@@ -44,16 +45,26 @@ class SignalPersistenceService(BaseService):
                 created_at=event.timestamp,
             )
 
-            await session.execute(stmt)
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=["id"],
+            )
+
+            result = await session.execute(stmt)
             await session.commit()
 
-        self.logger.info(
-            "Signal persisted",
-            extra={
-                "event_id": str(event.event_id),
-                "correlation_id": str(event.correlation_id),
-            },
-        )
+            if result.rowcount == 0:
+                self.logger.debug(
+                    "Duplicate signal ignored",
+                    extra={"event_id": str(event.event_id)},
+                )
+            else:
+                self.logger.info(
+                    "Signal persisted",
+                    extra={
+                        "event_id": str(event.event_id),
+                        "correlation_id": str(event.correlation_id),
+                    },
+    )
 
     async def run(self) -> None:
         while True:
