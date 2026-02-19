@@ -8,6 +8,7 @@ from services.processor.service import ProcessorService
 from services.intelligence.service import IntelligenceService
 from services.api.service import APIService
 from services.realtime.service import RealtimeService
+from services.persistence.service import SignalPersistenceService
 
 
 async def main():
@@ -34,7 +35,6 @@ async def main():
     api = APIService(
         name="api",
         event_bus=event_bus,
-        intelligence_service=intelligence,
     )
 
     realtime = RealtimeService(
@@ -42,6 +42,10 @@ async def main():
         event_bus=event_bus,
     )
 
+    persistence = SignalPersistenceService(
+        name="persistence",
+        event_bus=event_bus,
+    )
 
     await asyncio.gather(
         ingestion.start(),
@@ -49,6 +53,7 @@ async def main():
         intelligence.start(),
         api.start(),
         realtime.start(),
+        persistence.start(),
     )
 
 

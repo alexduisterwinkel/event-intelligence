@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from typing import Callable
 
 import redis.asyncio as redis
@@ -14,6 +15,7 @@ class RedisEventBus(EventBus):
     def __init__(self, redis_url: str = "redis://localhost:6379"):
         self.redis_url = redis_url
         self.redis = redis.from_url(redis_url, decode_responses=True)
+        self.logger = logging.getLogger("redis_event_bus")
 
     async def publish(self, stream: str, event: Event) -> None:
         await self.redis.xadd(

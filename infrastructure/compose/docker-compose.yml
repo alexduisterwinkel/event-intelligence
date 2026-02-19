@@ -5,3 +5,45 @@ services:
     image: redis:7
     ports:
       - "6379:6379"
+  postgres:
+    image: postgres:16
+    container_name: event-intel-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: event_intelligence
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d event_intelligence"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - event-net
+
+#  # 👇 optional but strongly recommended
+#  app:
+#    build: .
+#    container_name: event-intel-app
+#    restart: unless-stopped
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#    environment:
+#      DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/event_intelligence
+#      REDIS_URL: redis://redis:6379/0
+#    networks:
+#      - event-net
+
+volumes:
+  postgres_data:
+
+networks:
+  event-net:
+    driver: bridge

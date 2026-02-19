@@ -1,12 +1,18 @@
 from fastapi import FastAPI
 from core.bootstrap.service import BaseService
 
+from fastapi.responses import HTMLResponse
+from sqlalchemy import select
+
+from core.db.session import AsyncSessionLocal
+from core.db.models.signal import Signal
+
+
 
 class APIService(BaseService):
 
-    def __init__(self, name, event_bus, intelligence_service):
+    def __init__(self, name, event_bus):
         super().__init__(name, event_bus)
-        self.intelligence_service = intelligence_service
         self.app = FastAPI()
 
         self._register_routes()
@@ -34,11 +40,32 @@ class APIService(BaseService):
 
 
         @self.app.get("/signals")
-        async def get_signals():
-            return {
-                "count": len(self.intelligence_service.signals),
-                "signals": self.intelligence_service.signals,
-            }
+        async def get_signals(limit: int = 50):
+            async with AsyncSessionLocal() as session:
+                stmt = (
+                    select(Signal)
+                    .order_by(Signal.created_at.desc())
+                    .limit(limit)
+                )
+
+                result = await session.execute(stmt)
+                rows = result.scalars().all()
+
+                signals = [
+                    {
+                        "id": str(row.id),
+                        "category": row.category,
+                        "message": row.message,
+                        "confidence": row.confidence,
+                        "created_at": row.created_at.isoformat(),
+                    }
+                    for row in rows
+                ]
+
+                return {
+                    "count": len(signals),
+                    "signals": signals,
+                }
 
     async def run(self):
         import uvicorn
