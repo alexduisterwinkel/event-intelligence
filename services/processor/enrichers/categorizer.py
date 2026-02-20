@@ -1,5 +1,7 @@
 from typing import Dict, Tuple
 
+from core.utils.normalize import normalize_text
+
 CATEGORIES: Dict[str, list[str]] = {
     "finance": ["market", "stock", "investment", "economy", "inflation", "trading"],
     "technology": ["ai", "software", "github", "tech", "startup", "cloud"],
@@ -13,8 +15,8 @@ CATEGORY_WEIGHTS = {
 
 
 def _score_text(text: str, keywords: list[str]) -> int:
-    text_lower = text.lower()
-    return sum(1 for kw in keywords if kw in text_lower)
+    text_norm = normalize_text(text)
+    return sum(1 for kw in keywords if kw in text_norm)
 
 
 def categorize(title: str, content: str) -> Tuple[str, float]:

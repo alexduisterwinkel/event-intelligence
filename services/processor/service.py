@@ -38,16 +38,25 @@ class ProcessorService(BaseService):
         )
 
         #Extract content and process
+        title = event.payload.get("title", "")
         content = event.payload.get("content", "")
 
-        keywords = extract_keywords(content)
-        category = categorize(content)
+        combined_text = f"{title} {content}"
+
+        keywords = extract_keywords(combined_text)
+
+        category, category_confidence = categorize(
+            title,
+            content,
+        )
+
         score = score_article(content)
 
         enriched_payload = {
             **event.payload,
             "keywords": keywords,
             "category": category,
+            "category_confidence": category_confidence,
             "importance_score": score,
         }
 
