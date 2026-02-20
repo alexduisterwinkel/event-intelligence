@@ -39,13 +39,17 @@ class IntelligenceService(BaseService):
         category = event.payload.get("category", "general")
         timestamp = event.timestamp
 
-        trend_detected = self.detector.add_event(category, timestamp)
+        trend_detected, score = self.detector.add_event(
+            category,
+            timestamp,
+        )
 
         if trend_detected:
             signal_payload = {
                 "category": category,
                 "message": f"Trend detected in {category}",
-                "confidence": 0.8,
+                "confidence": min(1.0, score / self.detector.threshold),
+                "trend_score": score,
             }
 
             signal_event = create_event(
