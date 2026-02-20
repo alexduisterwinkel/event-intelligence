@@ -7,6 +7,7 @@ from core.events.types import EventTypes
 from core.messaging.streams import PROCESSED_EVENTS, SIGNALS
 
 from .detectors.trend_detector import TrendDetector
+from .detectors.anomaly_detector import AnomalyDetector
 
 
 class IntelligenceService(BaseService):
@@ -14,6 +15,11 @@ class IntelligenceService(BaseService):
     def __init__(self, name, event_bus):
         super().__init__(name, event_bus)
         self.detector = TrendDetector(window_seconds=60, threshold=3)
+
+        self.anomaly_detector = AnomalyDetector(
+            window_seconds=120,
+            anomaly_threshold=2.5,
+        )
         self.signals = []   # store emitted signals
 
     async def register_handlers(self):
@@ -40,6 +46,11 @@ class IntelligenceService(BaseService):
         timestamp = event.timestamp
 
         trend_detected, score = self.detector.add_event(
+            category,
+            timestamp,
+        )
+
+        is_anomaly, z_score = self.anomaly_detector.add_event(
             category,
             timestamp,
         )
@@ -71,6 +82,38 @@ class IntelligenceService(BaseService):
             )
 
             await self.event_bus.publish(SIGNALS,signal_event,)
+
+            # ------------------------------
+            # anomaly detection
+            # ------------------------------
+            if is_anomaly:
+                anomaly_payload = {
+                    "category": category,
+                    "message": f"Anomaly spike in {category}",
+                    "confidence": min(1.0, z_score / self.anomaly_detector.threshold),
+                    "z_score": z_score,
+                    "signal_type": "anomaly",
+                }
+
+                anomaly_event = create_event(
+                    event_type=EventTypes.SIGNAL_TREND_DETECTED,
+                    source=self.name,
+                    payload=anomaly_payload,
+                    correlation_id=event.correlation_id,
+                    causation_id=event.event_id,
+                )
+
+                self.logger.info(
+                    "Anomaly detected",
+                    extra={
+                        "event_id": str(anomaly_event.event_id),
+                        "correlation_id": str(anomaly_event.correlation_id),
+                        "z_score": z_score,
+                    },
+                )
+
+                await self.event_bus.publish(SIGNALS, anomaly_event)
+
 
     async def run(self):
         while True:
