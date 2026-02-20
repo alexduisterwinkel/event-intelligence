@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 from datetime import datetime
 
 from core.bootstrap.service import BaseService
@@ -13,6 +14,11 @@ class IngestionService(BaseService):
         super().__init__(name, event_bus)
         self.sources = sources
         self.interval = interval
+        self._seen_hashes = set()
+
+    def _fingerprint(self, item: dict) -> str:
+        raw = f"{item.get('title','')}|{item.get('published_at','')}"
+        return hashlib.sha256(raw.encode()).hexdigest()
 
     async def register_handlers(self):
         # Ingestion service typically does not subscribe
@@ -24,6 +30,12 @@ class IngestionService(BaseService):
                 items = await source.fetch()
 
                 for item in items:
+                    fp = self._fingerprint(item)
+
+                    if fp in self._seen_hashes:
+                        continue
+
+                    self._seen_hashes.add(fp)
                     event = create_event(
                         event_type=EventTypes.NEWS_ARTICLE_DETECTED,
                         source=self.name,

@@ -1,15 +1,43 @@
-CATEGORIES = {
-    "finance": ["market", "stock", "investment", "economy"],
-    "technology": ["ai", "software", "github", "tech"],
-    "politics": ["government", "election", "policy"],
+from typing import Dict, Tuple
+
+CATEGORIES: Dict[str, list[str]] = {
+    "finance": ["market", "stock", "investment", "economy", "inflation", "trading"],
+    "technology": ["ai", "software", "github", "tech", "startup", "cloud"],
+    "politics": ["government", "election", "policy", "senate", "minister"],
+}
+
+CATEGORY_WEIGHTS = {
+    "title": 2.0,
+    "content": 1.0,
 }
 
 
-def categorize(text: str) -> str:
+def _score_text(text: str, keywords: list[str]) -> int:
     text_lower = text.lower()
+    return sum(1 for kw in keywords if kw in text_lower)
+
+
+def categorize(title: str, content: str) -> Tuple[str, float]:
+    """
+    Returns (category, confidence_score)
+    """
+    scores: Dict[str, float] = {}
 
     for category, keywords in CATEGORIES.items():
-        if any(keyword in text_lower for keyword in keywords):
-            return category
+        score = (
+                _score_text(title, keywords) * CATEGORY_WEIGHTS["title"]
+                + _score_text(content, keywords) * CATEGORY_WEIGHTS["content"]
+        )
+        scores[category] = score
 
-    return "general"
+    best_category = max(scores, key=scores.get)
+    best_score = scores[best_category]
+
+    if best_score == 0:
+        return "general", 0.0
+
+    # simple confidence normalization
+    total = sum(scores.values()) or 1
+    confidence = best_score / total
+
+    return best_category, round(confidence, 3)
