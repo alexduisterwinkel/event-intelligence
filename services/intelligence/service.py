@@ -9,6 +9,7 @@ from core.messaging.streams import PROCESSED_EVENTS, SIGNALS
 from .detectors.trend_detector import TrendDetector
 from .detectors.anomaly_detector import AnomalyDetector
 from .detectors.keyword_stats import KeywordStatsStore
+from .scoring.composite import compute_trend_score
 
 
 class IntelligenceService(BaseService):
@@ -60,6 +61,10 @@ class IntelligenceService(BaseService):
             timestamp,
         )
 
+        importance = event.payload.get("importance_score", 0.0)
+        category_confidence = event.payload.get("category_confidence", 0.0)
+
+
         keywords = event.payload.get("keywords", [])
 
         keyword_stats = self.keyword_store.add_keywords(
@@ -76,13 +81,21 @@ class IntelligenceService(BaseService):
                 max_burst = burst
                 top_keyword = kw
 
+        composite_score = compute_trend_score(
+            importance=importance,
+            category_confidence=category_confidence,
+            keyword_burst=max_burst,
+        )
+
         if trend_detected:
             signal_payload = {
                 "category": category,
                 "message": f"Trend detected in {category}",
-                "confidence": min(1.0, score / self.detector.threshold),
+                "confidence": composite_score,
+                "composite_score": composite_score,
                 "top_keyword": top_keyword,
                 "trend_score": score,
+                "keyword_burst": max_burst,
             }
 
             signal_event = create_event(
