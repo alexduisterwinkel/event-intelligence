@@ -42,6 +42,12 @@ class SignalPersistenceService(BaseService):
                 category=payload.get("category"),
                 message=payload.get("message"),
                 confidence=payload.get("confidence"),
+                trend_score=payload.get("trend_score"),
+                composite_score=payload.get("composite_score"),
+                keyword_burst=payload.get("keyword_burst"),
+                top_keyword=payload.get("top_keyword"),
+                story_id=payload.get("story_id"),
+                signal_type=payload.get("signal_type", "trend"),
                 created_at=event.timestamp,
             )
 

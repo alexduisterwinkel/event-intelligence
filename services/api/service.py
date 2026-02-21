@@ -57,6 +57,12 @@ class APIService(BaseService):
                         "category": row.category,
                         "message": row.message,
                         "confidence": row.confidence,
+                        "trend_score": row.trend_score,
+                        "composite_score": row.composite_score,
+                        "keyword_burst": row.keyword_burst,
+                        "top_keyword": row.top_keyword,
+                        "story_id": row.story_id,
+                        "signal_type": row.signal_type,
                         "created_at": row.created_at.isoformat(),
                     }
                     for row in rows
