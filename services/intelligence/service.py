@@ -10,6 +10,7 @@ from .detectors.trend_detector import TrendDetector
 from .detectors.anomaly_detector import AnomalyDetector
 from .detectors.keyword_stats import KeywordStatsStore
 from .scoring.composite import compute_trend_score
+from .detectors.story_clusters import StoryClusterStore
 
 
 class IntelligenceService(BaseService):
@@ -26,6 +27,7 @@ class IntelligenceService(BaseService):
             short_window_seconds=60,
             long_window_seconds=300,
         )
+        self.story_store = StoryClusterStore(overlap_threshold=2)
         self.signals = []   # store emitted signals
 
     async def register_handlers(self):
@@ -66,6 +68,7 @@ class IntelligenceService(BaseService):
 
 
         keywords = event.payload.get("keywords", [])
+        story_id = self.story_store.assign_story(keywords)
 
         keyword_stats = self.keyword_store.add_keywords(
             keywords,
@@ -96,6 +99,7 @@ class IntelligenceService(BaseService):
                 "top_keyword": top_keyword,
                 "trend_score": score,
                 "keyword_burst": max_burst,
+                "story_id": story_id,
             }
 
             signal_event = create_event(
